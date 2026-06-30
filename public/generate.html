@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Generator Playground</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23grad)'/%3E%3Ctext x='50%25' y='65%25' font-family='sans-serif' font-weight='bold' font-size='18' fill='%23ffffff' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+  <script>
+    if (localStorage.getItem('healer_logged_in') !== 'true') {
+      window.location.href = '/login';
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon" style="background: linear-gradient(135deg, var(--accent-purple), var(--primary-color)); box-shadow: 0 0 15px var(--accent-purple-glow);">G</div>
+      <div class="logo-text">
+        <h1>PLAYGROUND</h1>
+        <p>AI Code Generator & Text to Code</p>
+      </div>
+    </div>
+    
+    <!-- Navigation between Dashboard and Playground -->
+    <nav style="display: flex; gap: 1rem;">
+      <a href="/" class="status-badge" style="text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
+        📊 Healer Dashboard
+      </a>
+      <a href="/generate" class="status-badge" style="text-decoration: none; color: var(--text-primary); background: var(--primary-color); border-color: var(--primary-color); font-weight: 600;">
+        ✨ Code Playground
+      </a>
+      <button id="btn-logout" class="status-badge" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; cursor: pointer; transition: all 0.3s; padding: 0.4rem 0.8rem;">
+        🚪 Logout
+      </button>
+    </nav>
+
+    <div class="status-badges">
+      <div class="status-badge">
+        <span class="dot green"></span> Server Status: Active
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <div class="dashboard" style="grid-template-columns: 380px 1fr;">
+    
+    <!-- Left Column: Input Form -->
+    <aside class="panel">
+      <div class="panel-header">Describe Your Code</div>
+      
+      <div class="form-group">
+        <label for="task-input">Prompt / Instructions</label>
+        <textarea id="task-input" rows="8" placeholder="e.g. write a function to check if a number is prime, with tests" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border); border-radius: 8px; padding: 0.75rem; color: #fff; font-family: inherit; font-size: 0.95rem; resize: vertical; line-height: 1.5;"></textarea>
+      </div>
+
+      <div id="target-lang-section" class="form-group">
+        <label>Target Language</label>
+        <div id="language-pills" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+          <div class="lang-pill active" data-value="javascript">JavaScript</div>
+          <div class="lang-pill" data-value="python">Python</div>
+          <div class="lang-pill" data-value="cpp">C++</div>
+          <div class="lang-pill" data-value="java">Java</div>
+          <div class="lang-pill" data-value="go">Go</div>
+          <div class="lang-pill" data-value="rust">Rust</div>
+          <div class="lang-pill" data-value="html">HTML</div>
+          <div class="lang-pill" data-value="css">CSS</div>
+        </div>
+      </div>
+
+      <button id="btn-generate" class="btn btn-primary" style="background: linear-gradient(135deg, var(--primary-color), var(--accent-purple)); box-shadow: 0 4px 15px var(--primary-glow);">
+        ✨ Generate Code
+      </button>
+
+      <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+        <h4 style="color: #fff; margin-bottom: 0.5rem;">Suggestions:</h4>
+        <ul style="padding-left: 1.25rem;">
+          <li style="margin-bottom: 0.25rem; cursor: pointer; color: var(--primary-color);" onclick="fillPrompt('Write a program to check if a number is odd or even')">"Check if number is odd or even"</li>
+          <li style="margin-bottom: 0.25rem; cursor: pointer; color: var(--primary-color);" onclick="fillPrompt('Write code for a string palindrome check')">"String palindrome checker"</li>
+          <li style="margin-bottom: 0.25rem; cursor: pointer; color: var(--primary-color);" onclick="fillPrompt('Write a python script to fetch the current weather using a public API')">"Weather API fetcher in Python"</li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Right Column: Result Output -->
+    <main class="panel" style="display: flex; flex-direction: column; justify-content: stretch;">
+      <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span>Generated Result</span>
+          <div id="language-badge" class="status-badge hidden" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa; font-weight: bold; text-transform: uppercase;">
+            JS
+          </div>
+        </div>
+        
+        <!-- Tab switches for code vs preview -->
+        <div id="playground-tabs" class="hidden" style="display: flex; gap: 0.25rem; background: rgba(0,0,0,0.25); padding: 2px; border-radius: 6px; border: 1px solid var(--panel-border);">
+          <button id="tab-btn-code" class="tab-pill active" style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; border: none; background: var(--primary-color); color: #fff; transition: all 0.2s;">Code View</button>
+          <button id="tab-btn-preview" class="tab-pill" style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); transition: all 0.2s;">Live Preview</button>
+        </div>
+      </div>
+      
+      <!-- Placeholder state -->
+      <div id="result-placeholder" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 0.95rem; border: 1px dashed var(--panel-border); border-radius: 8px; padding: 2rem; text-align: center;">
+        <span style="font-size: 2.5rem; margin-bottom: 1rem;">💻</span>
+        Enter a prompt on the left and click "Generate Code" to see the output here.
+      </div>
+
+      <!-- Result state -->
+      <div id="result-content" class="hidden" style="display: flex; flex-direction: column; gap: 1.5rem; flex: 1;">
+        
+        <!-- Explanation card -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem 1.25rem;">
+          <h4 style="color: #fff; font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Explanation:</h4>
+          <p id="code-explanation" style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.5;"></p>
+        </div>
+
+        <!-- Code Box View -->
+        <div id="code-view-container" class="diff-box" style="flex: 1; display: flex; flex-direction: column; min-height: 250px;">
+          <div class="diff-header" style="align-items: center; display: flex; justify-content: space-between;">
+            <span>Source Code</span>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="btn-copy" class="btn btn-secondary" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; width: auto; display: flex; align-items: center; gap: 0.25rem;">
+                📋 Copy Code
+              </button>
+              <button id="btn-run" class="btn btn-secondary" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; width: auto; display: flex; align-items: center; gap: 0.25rem;">
+                🚀 Run Code
+              </button>
+              <button id="btn-download" class="btn btn-secondary" style="margin: 0; padding: 0.35rem 0.75rem; font-size: 0.8rem; width: auto; display: flex; align-items: center; gap: 0.25rem;">
+                📥 Download
+              </button>
+            </div>
+          </div>
+          <div class="diff-code-wrapper" style="background: #090d16; padding: 1.25rem; overflow-x: auto;">
+            <pre class="diff-code"><code id="code-output" style="color: #34d399;"></code></pre>
+          </div>
+        </div>
+
+        <!-- Preview View (Interactive Sandboxed Iframe) -->
+        <div id="preview-view-container" class="hidden" style="border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; background: #000; min-height: 350px; display: flex; flex-direction: column;">
+          <div style="background: rgba(255,255,255,0.02); padding: 0.6rem 1rem; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; border-bottom: 1px solid var(--panel-border);">
+            🖥️ Sandbox Preview Output
+          </div>
+          <iframe id="playground-iframe" style="width: 100%; height: 350px; border: none; background: #fff; display: block;"></iframe>
+          <div id="playground-console" class="terminal" style="height: 350px; font-size: 0.85rem; padding: 1rem; overflow-y: auto; display: none; background: #030712; border-top: 1px solid var(--panel-border);"></div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="generate.js"></script>
+  <script>
+    function fillPrompt(text) {
+      document.getElementById('task-input').value = text;
+    }
+  </script>
+</body>
+</html>

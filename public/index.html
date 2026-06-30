@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous Self-Healing Agent Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%233b82f6'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23grad)'/%3E%3Ctext x='50%25' y='65%25' font-family='sans-serif' font-weight='bold' font-size='18' fill='%23ffffff' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+  <script>
+    if (localStorage.getItem('healer_logged_in') !== 'true') {
+      window.location.href = '/login';
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/editor/editor.main.min.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">H</div>
+      <div class="logo-text">
+        <h1>HEALER</h1>
+        <p>Autonomous Self-Healing Coding Agent</p>
+      </div>
+    </div>
+    
+    <!-- Navigation between Dashboard and Playground -->
+    <nav style="display: flex; gap: 1rem; align-items: center;">
+      <button id="btn-toggle-sidebar" class="status-badge" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border); cursor: pointer; color: var(--text-primary); transition: all 0.3s; padding: 0.4rem 0.8rem;">
+        📐 Toggle Sidebar
+      </button>
+      <a href="/" class="status-badge" style="text-decoration: none; color: var(--text-primary); background: var(--primary-color); border-color: var(--primary-color); font-weight: 600;">
+        📊 Healer Dashboard
+      </a>
+      <a href="/generate" class="status-badge" style="text-decoration: none; color: var(--text-primary); transition: all 0.3s;">
+        ✨ Code Playground
+      </a>
+      <button id="btn-logout" class="status-badge" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; cursor: pointer; transition: all 0.3s; padding: 0.4rem 0.8rem;">
+        🚪 Logout
+      </button>
+    </nav>
+
+    <div class="status-badges">
+      <div class="status-badge">
+        <span class="dot green"></span> Server Status: Active
+      </div>
+      <div class="status-badge">
+        <span class="dot blue"></span> LLM: Gemini 2.5 Flash
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Grid -->
+  <div class="dashboard">
+    
+    <!-- Left Column: Controls & Configuration -->
+    <aside class="panel">
+      <div class="panel-header">Settings & Controls</div>
+      
+      <!-- Add Project to Workspace Panel -->
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Add Project to Workspace</label>
+        
+        <!-- Add Project Sub-tabs -->
+        <div style="display: flex; gap: 0.25rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.03); padding: 0.25rem; border-radius: 8px; border: 1px solid var(--panel-border);">
+          <button type="button" id="tab-btn-git" class="btn btn-secondary active" style="margin: 0; padding: 0.4rem; font-size: 0.8rem; flex: 1; border: none; background: var(--primary-color);">GitHub URL</button>
+          <button type="button" id="tab-btn-zip" class="btn btn-secondary" style="margin: 0; padding: 0.4rem; font-size: 0.8rem; flex: 1; border: none; background: transparent;">Local ZIP</button>
+        </div>
+
+        <!-- Git URL Input Form -->
+        <div id="form-git">
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="git-url" placeholder="https://github.com/user/repo" style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border); border-radius: 8px; padding: 0.5rem; color: #fff; font-family: inherit; font-size: 0.85rem;">
+            <button type="button" id="btn-clone" class="btn btn-primary" style="margin: 0; width: auto; font-size: 0.85rem; padding: 0.5rem 0.85rem;">Clone</button>
+          </div>
+        </div>
+
+        <!-- Local ZIP Upload Form -->
+        <div id="form-zip" class="hidden">
+          <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+            <label for="zip-file" id="zip-label" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px dashed var(--panel-border); border-radius: 8px; padding: 0.75rem; text-align: center; color: var(--text-secondary); transition: all 0.3s;">
+              📁 Choose ZIP File
+            </label>
+            <input type="file" id="zip-file" accept=".zip" style="display: none;">
+            <button type="button" id="btn-unzip" class="btn btn-primary" style="margin: 0; width: 100%; font-size: 0.85rem; padding: 0.5rem; background: linear-gradient(135deg, var(--success-color), var(--primary-color)); box-shadow: 0 4px 15px var(--success-glow);" disabled>Upload & Unzip</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 1px; background: rgba(255, 255, 255, 0.08); margin-bottom: 1.25rem;"></div>
+
+      <div class="form-group">
+        <label for="project-select">Select Project</label>
+        <select id="project-select">
+          <option value="" disabled selected>Loading projects...</option>
+        </select>
+      </div>
+
+      <!-- Execution Mode Dropdown -->
+      <div class="form-group">
+        <label for="execution-mode">Execution Mode</label>
+        <select id="execution-mode">
+          <option value="direct" selected>Direct Debug (Manual Approve)</option>
+          <option value="docker">Docker Self-Healing (Run Tests)</option>
+        </select>
+      </div>
+
+      <!-- Collapsible Advanced Settings -->
+      <div style="margin-bottom: 1.25rem;">
+        <button type="button" id="btn-toggle-advanced" style="background: none; border: none; cursor: pointer; color: var(--primary-color); font-size: 0.8rem; font-weight: 600; padding: 0; display: flex; align-items: center; gap: 0.25rem;">
+          ⚙️ Advanced LLM Settings <span id="advanced-arrow">▶</span>
+        </button>
+        <div id="advanced-settings-panel" class="hidden" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid var(--panel-border); border-radius: 8px; display: flex; flex-direction: column; gap: 0.75rem;">
+          <div class="form-group" style="margin-bottom: 0; width: 100%;">
+            <label for="llm-model-select" style="font-size: 0.75rem;">Model</label>
+            <select id="llm-model-select" style="padding: 0.4rem; font-size: 0.85rem;">
+              <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0; width: 100%;">
+            <label for="llm-temperature" style="font-size: 0.75rem; display: flex; justify-content: space-between; width: 100%;">
+              <span>Temperature</span>
+              <span id="temp-val">0.2</span>
+            </label>
+            <input type="range" id="llm-temperature" min="0" max="1" step="0.1" value="0.2" style="padding: 0; accent-color: var(--primary-color); width: 100%;">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="heal-instructions">Debug Instructions / Prompt (Optional)</label>
+        <textarea id="heal-instructions" rows="6" placeholder="e.g. Describe the bug or what needs to be fixed..." style="width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--panel-border); border-radius: 8px; padding: 0.75rem; color: #fff; font-family: inherit; font-size: 0.9rem; resize: vertical; line-height: 1.4;"></textarea>
+      </div>
+
+      <button id="btn-start" class="btn btn-primary" style="background: linear-gradient(135deg, var(--primary-color), var(--success-color)); box-shadow: 0 4px 15px var(--primary-glow); margin-bottom: 0.75rem;">
+        ⚡ Go
+      </button>
+
+      <!-- Current Run Status -->
+      <div class="status-widget">
+        <div class="panel-header" style="font-size: 0.95rem; margin-bottom: 0.75rem; border: none; padding: 0;">
+          Session Status
+        </div>
+        <div class="status-row">
+          <span class="status-label">Agent State:</span>
+          <span id="agent-state" class="status-value idle">IDLE</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Attempt:</span>
+          <span id="current-attempt" class="status-value">0 / 3</span>
+        </div>
+        <div class="status-row" style="margin-bottom: 1rem;">
+          <span class="status-label">Docker Container:</span>
+          <span id="container-status" class="status-value">-</span>
+        </div>
+
+        <!-- Timeline Stepper -->
+        <div id="execution-timeline" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+          <div class="step-item" id="step-clone" data-status="pending">
+            <span class="step-icon">○</span>
+            <span class="step-text">Clone / Load Project</span>
+          </div>
+          <div class="step-item" id="step-inspect" data-status="pending">
+            <span class="step-icon">○</span>
+            <span class="step-text">Run Diagnostic Tests</span>
+          </div>
+          <div class="step-item" id="step-diagnose" data-status="pending">
+            <span class="step-icon">○</span>
+            <span class="step-text">Gemini Analysis & Repair</span>
+          </div>
+          <div class="step-item" id="step-verify" data-status="pending">
+            <span class="step-icon">○</span>
+            <span class="step-text">Verify Test Execution</span>
+          </div>
+          <div class="step-item" id="step-patch" data-status="pending">
+            <span class="step-icon">○</span>
+            <span class="step-text">Apply Patch Propose</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup History Card -->
+      <div id="backup-history-card" class="status-card" style="margin-top: 1rem; max-height: 250px; overflow-y: auto;">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
+          <span>⏮ Restore Points</span>
+          <button id="btn-refresh-backups" style="background: none; border: none; cursor: pointer; color: var(--primary-color); font-size: 0.8rem; padding: 0;">↻</button>
+        </div>
+        <div id="backup-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <!-- Backups will load here -->
+          <div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center;">No restore points created yet.</div>
+        </div>
+      </div>
+
+      <!-- File Tree Explorer Card -->
+      <div id="file-explorer-card" class="status-card" style="margin-top: 1rem; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column;">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+          📁 Project File Explorer
+        </div>
+        <div id="file-explorer-tree" style="flex: 1; min-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid var(--panel-border); border-radius: 8px; padding: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.6;">
+          <div style="color: var(--text-secondary); text-align: center; font-style: italic; padding: 1rem 0.5rem;">Select a project to view files.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Visual Logs & Diff Viewer -->
+    <main class="main-content">
+      
+      <!-- Console/Terminal Log Pane -->
+      <section class="panel console-panel">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 0.75rem;">
+          <span>Live Console Output</span>
+          <div class="console-controls" style="display: flex; align-items: center; gap: 0.5rem; flex: 1; justify-content: flex-end; min-width: 250px;">
+            <input type="text" id="console-search" placeholder="Search logs..." style="padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid var(--panel-border); background: rgba(0,0,0,0.25); color: #fff; font-size: 0.75rem; width: 130px; outline: none; transition: width 0.25s ease;" onfocus="this.style.width='180px'" onblur="this.style.width='130px'">
+            <div class="console-filters" style="display: flex; gap: 0.25rem;">
+              <button class="filter-pill active" data-filter="all">All</button>
+              <button class="filter-pill" data-filter="error">Errors</button>
+              <button class="filter-pill" data-filter="llm">AI</button>
+              <button class="filter-pill" data-filter="container">Docker</button>
+            </div>
+            <button id="btn-clear-console" class="btn btn-secondary" style="margin: 0; padding: 0.25rem 0.5rem; font-size: 0.75rem; width: auto; height: 26px; display: flex; align-items: center;">
+              Clear
+            </button>
+          </div>
+        </div>
+        <div id="terminal" class="terminal">
+          <div class="terminal-line" data-type="info">System initialized. Waiting for self-healing instructions...</div>
+        </div>
+      </section>
+
+      <!-- Code Diff Pane -->
+      <section class="panel diff-panel">
+        <div class="panel-header">
+          <span>LLM Code Repair Diff Viewer</span>
+          <div class="diff-tabs" id="diff-tabs-container">
+            <!-- Tabs will be dynamically created here for each attempt -->
+          </div>
+        </div>
+        
+        <div id="diff-content" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0;">
+          
+          <!-- Explanation Card -->
+          <div id="fix-explanation-container" class="hidden" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); border-radius: 8px; padding: 1rem 1.25rem;">
+            <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 0.5rem;">
+              💡 Fix Explanation & Analysis
+            </h4>
+            <p id="fix-explanation" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0; white-space: pre-wrap;"></p>
+          </div>
+
+          <!-- Approval Control Bar -->
+          <div id="approval-bar" class="hidden" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--panel-border); border-radius: 8px; padding: 0.75rem 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span id="approval-status-icon" style="font-size: 1.1rem;">⚠️</span>
+              <span id="approval-status-text" style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">
+                This patch is proposed but not applied to disk yet.
+              </span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="btn-approve" class="btn btn-primary" style="margin: 0; padding: 0.45rem 1rem; font-size: 0.85rem; width: auto; background: linear-gradient(135deg, var(--success-color), #059669); box-shadow: 0 4px 10px var(--success-glow);">
+                ✓ Approve & Apply
+              </button>
+              <button id="btn-reject" class="btn btn-secondary" style="margin: 0; padding: 0.45rem 1rem; font-size: 0.85rem; width: auto; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
+                ✗ Discard
+              </button>
+            </div>
+          </div>
+
+          <!-- Monaco Diff Container -->
+          <div id="monaco-diff-container" style="flex: 1; min-height: 380px; border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; background: #070c14;"></div>
+
+        </div>
+
+        <div id="diff-placeholder" style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 0.9rem; border: 1px dashed var(--panel-border); border-radius: 8px;">
+          Code comparisons will be loaded here once Gemini generates a code fix.
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

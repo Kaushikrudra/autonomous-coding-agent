@@ -1,0 +1,21 @@
+{
+  "name": "autonomous-coding-agent",
+  "version": "1.0.0",
+  "description": "An autonomous coding agent that runs tests in docker",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test-runner": "node test-docker-runner.js",
+    "test-llm": "node test-llm.js",
+    "test-orchestrator": "node test-orchestrator.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.10.0",
+    "dockerode": "^3.3.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "multer": "^2.2.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
